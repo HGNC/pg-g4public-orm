@@ -1,5 +1,10 @@
 """ORM model exports for ``pg_g4public_orm.models``."""
 
+from pg_g4public_orm.models.association import (
+    FamilyHasExternalResource,
+    FamilyHasSpecialist,
+    GeneHasFamily,
+)
 from pg_g4public_orm.models.core import (
     Cell,
     FamilyAlias,
@@ -23,4 +28,7 @@ __all__ = [
     "LocusStatsChr",
     "ExternalResource",
     "Specialist",
+    "GeneHasFamily",
+    "FamilyHasExternalResource",
+    "FamilyHasSpecialist",
 ]
