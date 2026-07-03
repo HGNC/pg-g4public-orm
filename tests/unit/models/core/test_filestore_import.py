@@ -97,9 +97,7 @@ def test_filestore_full_column_set(filestore) -> None:
 
 
 @pytest.mark.parametrize("column_name", sorted(EXPECTED_FILESTORE_COLUMNS))
-def test_filestore_column_types_and_nullability(
-    filestore, column_name: str
-) -> None:
+def test_filestore_column_types_and_nullability(filestore, column_name: str) -> None:
     """Each column has the right type and nullability per the dump."""
     _assert_column_type_and_nullability(
         filestore, column_name, EXPECTED_FILESTORE_COLUMNS

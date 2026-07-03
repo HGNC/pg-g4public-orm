@@ -61,6 +61,15 @@ from pg_g4public_orm.core import (  # noqa: E402
     DatabaseSettings,
     DeclarativeBase,
 )
+from pg_g4public_orm.core.session import (  # noqa: E402
+    close_all_sessions,
+    get_engine,
+    get_readonly_session,
+    get_readwrite_session,
+    get_settings,
+    initialize_engine,
+    refresh_engine,
+)
 
 # ORM models — re-exported from submodules.
 from pg_g4public_orm.models import (  # noqa: E402
@@ -73,8 +82,8 @@ from pg_g4public_orm.models import (  # noqa: E402
     FamilyHasSpecialist,
     FamilyNew,
     Filestore,
-    GeneHasFamily,
     Gencc,
+    GeneHasFamily,
     HcopOrthologs,
     Hierarchy,
     HierarchyClosure,
@@ -84,15 +93,6 @@ from pg_g4public_orm.models import (  # noqa: E402
     Mane,
     PubHgnc,
     Specialist,
-)
-from pg_g4public_orm.core.session import (  # noqa: E402
-    close_all_sessions,
-    get_engine,
-    get_readonly_session,
-    get_readwrite_session,
-    get_settings,
-    initialize_engine,
-    refresh_engine,
 )
 
 __all__ = [

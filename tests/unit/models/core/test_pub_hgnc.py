@@ -182,18 +182,18 @@ def test_column_types_and_nullability(pub_hgnc, column_name: str) -> None:
         f"{column_name}: expected {expected_type.__name__}, "
         f"got {type(col.type).__name__}"
     )
-    assert col.nullable is expected_nullable, (
-        f"{column_name}: nullable={col.nullable}, expected {expected_nullable}"
-    )
+    assert (
+        col.nullable is expected_nullable
+    ), f"{column_name}: nullable={col.nullable}, expected {expected_nullable}"
 
 
 @pytest.mark.parametrize("column_name", sorted(BOOLEAN_COLUMNS))
 def test_boolean_columns(pub_hgnc, column_name: str) -> None:
     """``gd_ambiguous``/``gd_to_review``/``gd_stable_symbol`` are Boolean."""
     col = _column(pub_hgnc, column_name)
-    assert isinstance(col.type, Boolean), (
-        f"{column_name}: expected Boolean, got {type(col.type).__name__}"
-    )
+    assert isinstance(
+        col.type, Boolean
+    ), f"{column_name}: expected Boolean, got {type(col.type).__name__}"
     assert col.nullable is True, f"{column_name} must be nullable"
 
 
