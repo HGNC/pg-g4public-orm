@@ -61,6 +61,30 @@ from pg_g4public_orm.core import (  # noqa: E402
     DatabaseSettings,
     DeclarativeBase,
 )
+
+# ORM models — re-exported from submodules.
+from pg_g4public_orm.models import (  # noqa: E402
+    Cell,
+    Comment,
+    Ensembl2Hgnc,
+    ExternalResource,
+    FamilyAlias,
+    FamilyHasExternalResource,
+    FamilyHasSpecialist,
+    FamilyNew,
+    Filestore,
+    GeneHasFamily,
+    Gencc,
+    HcopOrthologs,
+    Hierarchy,
+    HierarchyClosure,
+    Import,
+    LocusStats,
+    LocusStatsChr,
+    Mane,
+    PubHgnc,
+    Specialist,
+)
 from pg_g4public_orm.core.session import (  # noqa: E402
     close_all_sessions,
     get_engine,
@@ -93,4 +117,25 @@ __all__ = [
     # Capability re-exports (db-common alignment)
     "health_check",
     "DatabaseDriver",
+    # ORM models
+    "PubHgnc",
+    "FamilyNew",
+    "FamilyAlias",
+    "Hierarchy",
+    "HierarchyClosure",
+    "Cell",
+    "Filestore",
+    "Import",
+    "LocusStats",
+    "LocusStatsChr",
+    "Comment",
+    "Gencc",
+    "Ensembl2Hgnc",
+    "Mane",
+    "HcopOrthologs",
+    "ExternalResource",
+    "Specialist",
+    "GeneHasFamily",
+    "FamilyHasExternalResource",
+    "FamilyHasSpecialist",
 ]

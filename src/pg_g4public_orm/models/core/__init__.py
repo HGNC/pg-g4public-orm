@@ -13,6 +13,8 @@ from pg_g4public_orm.models.core.locus_stats import LocusStats
 from pg_g4public_orm.models.core.locus_stats_chr import LocusStatsChr
 from pg_g4public_orm.models.core.mane import Mane
 from pg_g4public_orm.models.core.pub_hgnc import PubHgnc
+from pg_g4public_orm.models.core.filestore import Filestore
+from pg_g4public_orm.models.core.import_model import Import
 
 __all__ = [
     "PubHgnc",
@@ -21,6 +23,8 @@ __all__ = [
     "Hierarchy",
     "HierarchyClosure",
     "Cell",
+    "Filestore",
+    "Import",
     "LocusStats",
     "LocusStatsChr",
     "Comment",
