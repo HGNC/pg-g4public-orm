@@ -10,7 +10,7 @@ never creates, alters, or drops schema objects (``primary_key=True`` /
 
 from __future__ import annotations
 
-from sqlalchemy import BigInteger, Integer, Sequence, String, Text
+from sqlalchemy import BigInteger, Sequence, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from pg_g4public_orm.core.base import DeclarativeBase
