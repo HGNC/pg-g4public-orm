@@ -6,6 +6,7 @@ from pg_g4public_orm.models.core.ensembl2hgnc import Ensembl2Hgnc
 from pg_g4public_orm.models.core.family_alias import FamilyAlias
 from pg_g4public_orm.models.core.family_new import FamilyNew
 from pg_g4public_orm.models.core.gencc import Gencc
+from pg_g4public_orm.models.core.hcop_orthologs import HcopOrthologs
 from pg_g4public_orm.models.core.hierarchy import Hierarchy
 from pg_g4public_orm.models.core.hierarchy_closure import HierarchyClosure
 from pg_g4public_orm.models.core.locus_stats import LocusStats
@@ -26,4 +27,5 @@ __all__ = [
     "Gencc",
     "Ensembl2Hgnc",
     "Mane",
+    "HcopOrthologs",
 ]
