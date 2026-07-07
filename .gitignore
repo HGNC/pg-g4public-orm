@@ -1,3 +1,6 @@
 .pi/
 __pycache__/
 *.py[cod]
+
+# Sphinx build output
+docs/_build/
