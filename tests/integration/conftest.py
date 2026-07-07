@@ -48,5 +48,9 @@ def loaded_schema_connection(
 
     with psycopg.connect(dsn, autocommit=True) as conn:
         with conn.cursor() as cursor:
+            # Reset public schema each test so the full dump can be replayed
+            # idempotently in the shared (session-scoped) container.
+            cursor.execute("DROP SCHEMA IF EXISTS public CASCADE;")
+            cursor.execute("CREATE SCHEMA public;")
             cursor.execute(owner_stripped_schema_sql)
         yield conn
