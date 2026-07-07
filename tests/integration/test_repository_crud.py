@@ -79,7 +79,9 @@ def test_repository_crud_round_trip_for_junction_model(
     try:
         with Session(engine) as session:
             family_repo: Repository[FamilyNew] = Repository(session, FamilyNew)
-            junction_repo: Repository[GeneHasFamily] = Repository(session, GeneHasFamily)
+            junction_repo: Repository[GeneHasFamily] = Repository(
+                session, GeneHasFamily
+            )
 
             family = FamilyNew(abbreviation="T11_LINK", name="Task 11 junction family")
             family_repo.add(family)

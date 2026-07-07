@@ -95,6 +95,9 @@ from pg_g4public_orm.models import (  # noqa: E402
     Specialist,
 )
 
+# Repository — re-exported from repositories.
+from pg_g4public_orm.repositories import Repository  # noqa: E402
+
 __all__ = [
     "__version__",
     # Core
@@ -117,6 +120,8 @@ __all__ = [
     # Capability re-exports (db-common alignment)
     "health_check",
     "DatabaseDriver",
+    # Repository
+    "Repository",
     # ORM models
     "PubHgnc",
     "FamilyNew",

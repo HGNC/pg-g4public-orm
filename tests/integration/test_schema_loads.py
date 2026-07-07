@@ -2,7 +2,6 @@
 
 import pytest
 
-
 CURATED_TABLES = {
     "cell",
     "comment",
@@ -31,8 +30,7 @@ CURATED_TABLES = {
 def test_schema_loads_curated_table_set(loaded_schema_connection):
     """The dump should load cleanly and expose exactly the 20 curated tables."""
     with loaded_schema_connection.cursor() as cursor:
-        cursor.execute(
-            """
+        cursor.execute("""
             SELECT tablename
             FROM pg_tables
             WHERE schemaname = 'public'
@@ -43,8 +41,7 @@ def test_schema_loads_curated_table_set(loaded_schema_connection):
                 'hierarchy_closure', 'import', 'locus_stats', 'locus_stats_chr', 'mane',
                 'pub_hgnc', 'specialist'
               )
-            """
-        )
+            """)
         tables = {row[0] for row in cursor.fetchall()}
 
     assert tables == CURATED_TABLES

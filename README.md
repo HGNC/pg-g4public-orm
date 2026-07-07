@@ -8,22 +8,30 @@ gene/family data). Synchronous only, built on the shared
 > The ORM reads and writes **data only** — it never creates, alters, or drops
 > schema objects.
 
-## Status
-
-Scaffold (Task T1): `core` package (`DatabaseSettings`, session module-function
-surface, `DeclarativeBase`) on `db-common`. Models, repositories, integration
-harness, CI/CD, and docs land in subsequent tasks.
-
 ## Quick start
 
 ```python
-from pg_g4public_orm import DatabaseSettings, initialize_engine, get_readwrite_session
+from pg_g4public_orm import (
+    DatabaseSettings,
+    Repository,
+    FamilyNew,
+    initialize_engine,
+    get_readwrite_session,
+)
 
 initialize_engine(DatabaseSettings())  # reads DB_* env vars
 
 with get_readwrite_session() as session:
-    ...
+    families = Repository(session, FamilyNew)
+    family = families.get_by_id(1)        # read
+    new = families.add(FamilyNew(...))    # create
+    families.save(new)                    # update
+    families.delete(new)                  # delete
 ```
+
+All 20 ORM models, the generic `Repository`, the session module-function
+surface, and the re-exported `db-common` exceptions/capabilities are importable
+directly from the top-level `pg_g4public_orm` package.
 
 ## Configuration
 
