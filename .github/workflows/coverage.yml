@@ -1,0 +1,32 @@
+name: coverage
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          uv pip install -e .[test,postgres]
+
+      - name: Run coverage tests
+        run: |
+          uv run pytest --cov=src/pg_g4public_orm tests/
+          uv run codecov
+
+      - name: Check coverage threshold
+        run: |
+          uv run coverage report --fail-under=70
