@@ -14,10 +14,12 @@ def assert_workflow_triggers(name, workflow):
     # All workflows should only target main
     if "push" in on:
         assert on["push"].get("branches", []) == [
-            "main"], f"{name} push trigger has wrong branches"
+            "main"
+        ], f"{name} push trigger has wrong branches"
     if "pull_request" in on:
         assert on["pull_request"].get("branches", []) == [
-            "main"], f"{name} PR trigger has wrong branches"
+            "main"
+        ], f"{name} PR trigger has wrong branches"
 
     # No workflows should reference dev/feature branches in triggers
     # The test is checking for branch names, not dependency names
@@ -43,9 +45,7 @@ def test_workflow_triggers(workflow_name, expected_jobs):
     workflow = load_workflow(workflow_path)
 
     # Verify basic workflow structure
-    assert (
-        workflow["name"].lower() == workflow_name.replace("_", " ").lower()
-    )
+    assert workflow["name"].lower() == workflow_name.replace("_", " ").lower()
     assert set(workflow["jobs"].keys()) == expected_jobs
 
     # Verify ci workflow has integration job with postgres service
@@ -75,9 +75,9 @@ def test_development_workflow_triggers():
     on_section = workflow.get("on", {})
     assert "push" not in on_section, "development workflow has push trigger"
     if "pull_request" in on_section:
-        assert (
-            on_section["pull_request"].get("branches", []) == ["main"]
-        ), "development workflow PR trigger has wrong branches"
+        assert on_section["pull_request"].get("branches", []) == [
+            "main"
+        ], "development workflow PR trigger has wrong branches"
 
 
 def test_ci_workflow_matrix():
@@ -128,9 +128,7 @@ def test_docs_workflow():
     assert "build_docs" in workflow["jobs"]
     steps = workflow["jobs"]["build_docs"].get("steps", [])
     if len(steps) >= 1:
-        assert (
-            steps[-1].get("uses", "") == "peaceiris/actions-gh-pages@v3"
-        )
+        assert steps[-1].get("uses", "") == "peaceiris/actions-gh-pages@v3"
 
     # Verify all workflows have correct triggers
     assert_workflow_triggers("docs", workflow)
