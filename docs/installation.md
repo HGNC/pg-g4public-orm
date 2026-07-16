@@ -10,11 +10,20 @@ The project uses [`uv`](https://docs.astral.sh/uv/) for environment management.
 ```bash
 git clone https://github.com/HGNC/pg-g4public-orm.git
 cd pg-g4public-orm
-uv sync --extra dev
+uv sync --group dev --extra dev
 ```
 
-The `dev` extra pulls the full quality + docs toolchain (`mypy`, `ruff`,
-`black`, `isort`, `bandit`) plus the `test` and `postgres` extras transitively.
+This installs two complementary sets of dev tooling:
+
+- the **`dev` extra** (declared in `[project.optional-dependencies]`) — the
+  quality toolchain (`mypy`, `ruff`, `black`, `isort`, `bandit`), plus the
+  `test` and `postgres` extras transitively;
+- the **`dev` dependency-group** (declared in `[dependency-groups]`) — the docs
+  build toolchain (`sphinx`, `myst-parser`) and `anybadge`/`testcontainers`.
+
+`uv sync` includes the default `dev` group automatically, so `uv sync --extra dev`
+also works; the explicit `--group dev --extra dev` form (used by the CI docs
+workflow) documents the intent and guarantees the docs build is available.
 
 ## Runtime dependencies
 
@@ -44,3 +53,13 @@ uv run pytest -m integration          # + ephemeral PostgreSQL container
 
 Integration tests require Docker (they spin up a `postgres:16` testcontainer)
 and are skipped automatically when Docker / Postgres is unavailable.
+
+## Building the docs
+
+```bash
+cd docs && uv run python -m sphinx -W -b html . _build/html
+```
+
+This is the exact invocation used by the `docs.yml` / `pages.yml` workflows
+(warnings-as-errors via `-W`); it requires the docs toolchain, so run it after
+`uv sync --group dev --extra dev`.

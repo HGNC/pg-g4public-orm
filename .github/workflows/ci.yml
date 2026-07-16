@@ -8,9 +8,13 @@ on:
 
 jobs:
   ci:
-    name: CI Matrix
+    # Single matrixed job: each leg runs exactly one test type. Integration
+    # tests use testcontainers, which spins up its own postgres:16 container,
+    # so no GitHub-managed `services:` block is needed (and none is declared).
+    name: ${{ matrix.name }}
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         include:
           - name: Unit tests
@@ -31,40 +35,12 @@ jobs:
         run: |
           uv pip install -e '.[test,postgres]'
 
-      - name: Run tests
+      - name: Run unit tests
+        if: matrix.matrix == 'unit'
         run: |
           uv run pytest tests/unit
 
       - name: Run integration tests
         if: matrix.matrix == 'integration'
-        run: |
-          uv run pytest tests/integration
-
-  integration:
-    needs: ci
-    runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:16
-        ports: ['5432']
-        options: >-
-          --health-cmd "pg_isready"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.13'
-
-      - name: Install dependencies
-        run: |
-          uv pip install -e '.[test,postgres]'
-
-      - name: Run integration tests
         run: |
           uv run pytest tests/integration

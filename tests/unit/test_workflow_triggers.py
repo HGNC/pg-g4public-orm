@@ -82,7 +82,7 @@ def assert_workflow_triggers(name, workflow):
 @pytest.mark.parametrize(
     "workflow_name,expected_jobs",
     [
-        ("ci", {"ci", "integration"}),
+        ("ci", {"ci"}),
         ("coverage", {"coverage"}),
         ("docs", {"build_docs"}),
         ("development", {"lint"}),
@@ -96,20 +96,15 @@ def test_workflow_triggers(workflow_name, expected_jobs):
     assert workflow["name"].lower() == workflow_name.replace("_", " ").lower()
     assert set(workflow["jobs"].keys()) == expected_jobs
 
-    # Verify ci workflow has integration job with postgres service
+    # ci is a single matrixed job (unit + integration legs). Integration tests
+    # run via testcontainers, so the workflow must NOT declare a GitHub-managed
+    # postgres service (that would be dead config).
     if workflow_name == "ci":
-        integration_job = workflow["jobs"]["integration"]
-        needs = integration_job.get("needs", [])
-        strategy = integration_job.get("strategy", {})
-
-        # The integration job needs the 'ci' job
-        assert "ci" in needs, "ci integration job needs 'ci' job"
-        matrix_include = strategy.get("matrix", {}).get("include", [])
-        if len(matrix_include) > 1:
-            assert matrix_include[1] == {
-                "name": "Integration tests",
-                "matrix": "integration",
-            }, "ci workflow integration matrix configuration incorrect"
+        ci_job = workflow["jobs"]["ci"]
+        assert "services" not in ci_job, (
+            "ci workflow must not declare a postgres service "
+            "(integration tests use testcontainers)"
+        )
 
     # Verify all workflows have correct triggers
     assert_workflow_triggers(workflow_name, workflow)
@@ -139,6 +134,23 @@ def test_ci_workflow_matrix():
         {"name": "Unit tests", "matrix": "unit"},
         {"name": "Integration tests", "matrix": "integration"},
     ], "ci workflow matrix configuration incorrect"
+
+    # Each leg must run exactly its own test type (no duplication, no cross-run).
+    steps = ci_job.get("steps", [])
+    unit_run = [
+        s
+        for s in steps
+        if s.get("if", "") == "matrix.matrix == 'unit'"
+        and "tests/unit" in s.get("run", "")
+    ]
+    integration_run = [
+        s
+        for s in steps
+        if s.get("if", "") == "matrix.matrix == 'integration'"
+        and "tests/integration" in s.get("run", "")
+    ]
+    assert unit_run, "ci unit leg must run pytest tests/unit"
+    assert integration_run, "ci integration leg must run pytest tests/integration"
 
 
 def test_coverage_workflow():

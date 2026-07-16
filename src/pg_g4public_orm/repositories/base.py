@@ -45,16 +45,24 @@ class Repository[T: DeclarativeBase]:
         return self._execute_scalars(stmt)
 
     def add(self, entity: T) -> T:
-        """Add entity to session without committing."""
+        """Stage a new (transient) entity for insertion (commit-agnostic).
+
+        The owning ``get_readwrite_session()`` context manager controls
+        transaction boundaries (commit/rollback), so this repository never
+        commits.
+        """
         self._session.add(entity)
         return entity
 
     def save(self, entity: T) -> T:
-        """Add entity to session without committing.
+        """Stage a new or modified entity for persistence (commit-agnostic).
 
-        The owning ``get_readwrite_session()`` context manager controls
-        transaction boundaries (commit/rollback), so this repository remains
-        commit-agnostic.
+        Delegates to :meth:`add`: SQLAlchemy's unit of work treats a transient
+        instance as an INSERT and a dirty/detached instance as an UPDATE on the
+        next flush, so both "create" and "update" go through the same staging
+        call. The owning ``get_readwrite_session()`` context manager controls
+        transaction boundaries (commit/rollback), so this repository never
+        commits.
         """
         return self.add(entity)
 

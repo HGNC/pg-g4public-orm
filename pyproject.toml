@@ -36,6 +36,7 @@ test = [
     "pytest-cov>=5.0",
     "testcontainers>=4.0",
     "actionlint-py>=1.7",
+    "pyyaml>=6.0",
 ]
 # PostgreSQL driver for the integration leg (matches the runtime dep so the
 # `postgresql+psycopg` driver is usable in CI without re-declaring it).

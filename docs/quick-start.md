@@ -23,16 +23,18 @@ from pg_g4public_orm import (
 
 with get_readwrite_session() as session:
     families = Repository(session, FamilyNew)
-    family = families.get_by_id(1)          # read by primary key
-    rows = families.list_all(limit=25)      # paginated list
-    hits = families.filter_by(ind_name="Kinase")  # equality filter
+    family = families.get_by_id(1)               # read by primary key
+    rows = families.list_all(limit=25)           # paginated list
+    hits = families.filter_by(abbreviation="Kinase")  # equality filter
 
-    new = families.add(FamilyNew(ind_name="New family"))  # create
-    families.save(new)                                    # update
-    families.delete(new)                                  # delete
+    new = families.add(FamilyNew(abbreviation="New family"))  # create
+    families.save(new)                                        # update
+    families.delete(new)                                      # delete
 ```
 
 `Repository(session, FamilyNew)` works against any of the 20 model classes.
+The example uses `FamilyNew.abbreviation` (the family short name; indexed in
+the schema as `ind_name`).
 
 ## Read-only sessions
 
