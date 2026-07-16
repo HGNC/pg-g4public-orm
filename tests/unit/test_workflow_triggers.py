@@ -3,9 +3,59 @@ from pathlib import Path
 import pytest
 import yaml
 
+RELEASE_SCRIPT_EXPECTATIONS = {
+    "analyze_commits": [
+        (
+            "analyze_commits.py",
+            ["--range", "--output analysis.json"],
+        ),
+    ],
+    "bump_version": [
+        (
+            "determine_version_bump.py",
+            ["analysis.json"],
+        ),
+        (
+            "bump_version.py",
+            ["--current", "--bump"],
+        ),
+    ],
+    "create_tag": [
+        (
+            "generate_release_notes.py",
+            [
+                "--analysis-file analysis.json",
+                "--current-version",
+                "--new-version",
+                "--output release-notes.md",
+            ],
+        ),
+        (
+            "update_changelog.py",
+            ["--version", "--release-notes-file release-notes.md"],
+        ),
+        (
+            "update_version.py",
+            ["--version"],
+        ),
+        (
+            "update_version_references.py",
+            ["--old-version", "--new-version"],
+        ),
+    ],
+}
+
 
 def load_workflow(path):
-    return yaml.safe_load(Path(path).read_text())
+    workflow = yaml.safe_load(Path(path).read_text())
+    # yaml 1.1 parses the `on:` key as bool True; normalize it back
+    if True in workflow:
+        workflow["on"] = workflow.pop(True)
+    return workflow
+
+
+def get_run_commands(job):
+    return [step.get("run", "") for step in job.get("steps", []) if "run" in step]
 
 
 def assert_workflow_triggers(name, workflow):
@@ -22,8 +72,6 @@ def assert_workflow_triggers(name, workflow):
         ], f"{name} PR trigger has wrong branches"
 
     # No workflows should reference dev/feature branches in triggers
-    # The test is checking for branch names, not dependency names
-    # Let's check if 'on' section contains 'dev' or 'feature' branches
     on_str = str(on)
     assert "dev" not in on_str, f"{name} on section contains forbidden branch reference"
     assert (
@@ -102,20 +150,16 @@ def test_coverage_workflow():
     assert "coverage" in workflow["jobs"]
     steps = workflow["jobs"]["coverage"].get("steps", [])
     if len(steps) >= 2:
-        # Split the run commands since they are in one string
         run_commands = steps[-2].get("run", "").strip().split("\n")
-        # The first command should be the pytest --cov command
         pytest_cov_command = run_commands[0] if run_commands else ""
         assert (
             pytest_cov_command == "uv run pytest --cov=src/pg_g4public_orm tests/"
         ), "coverage workflow pytest command incorrect"
-        # The second command should be uv run codecov
         codecov_command = run_commands[1] if len(run_commands) > 1 else ""
         assert (
             codecov_command == "uv run codecov"
         ), "coverage workflow codecov command incorrect"
 
-    # Verify all workflows have correct triggers
     assert_workflow_triggers("coverage", workflow)
 
 
@@ -123,12 +167,156 @@ def test_docs_workflow():
     workflow_path = ".github/workflows/docs.yml"
     workflow = load_workflow(workflow_path)
 
-    # Verify docs workflow has correct structure
     assert workflow["name"] == "docs"
     assert "build_docs" in workflow["jobs"]
     steps = workflow["jobs"]["build_docs"].get("steps", [])
-    if len(steps) >= 1:
-        assert steps[-1].get("uses", "") == "peaceiris/actions-gh-pages@v3"
 
-    # Verify all workflows have correct triggers
+    assert any(
+        "uv sync --group dev --extra dev" in step.get("run", "") for step in steps
+    )
+    assert any(
+        "sphinx-build -b html . _build/html" in step.get("run", "") for step in steps
+    )
+    assert not any(
+        step.get("uses", "").startswith("peaceiris/actions-gh-pages") for step in steps
+    )
+
     assert_workflow_triggers("docs", workflow)
+
+
+@pytest.mark.parametrize(
+    "workflow_name,expected_jobs",
+    [
+        (
+            "release",
+            {
+                "analyze_commits",
+                "bump_version",
+                "create_tag",
+                "github_release",
+                "build_package",
+            },
+        ),
+        ("pages", {"deploy_docs"}),
+    ],
+)
+def test_main_only_workflow(workflow_name, expected_jobs):
+    workflow_path = f".github/workflows/{workflow_name}.yml"
+    workflow = load_workflow(workflow_path)
+
+    assert workflow["name"] == workflow_name
+    assert set(workflow["jobs"].keys()) == expected_jobs
+
+    on_section = workflow.get("on", {})
+    assert "push" in on_section
+    assert on_section["push"]["branches"] == ["main"]
+    assert "pull_request" not in on_section
+
+
+@pytest.mark.parametrize(
+    "workflow_name", ["ci", "coverage", "development", "docs", "pages", "release"]
+)
+def test_workflows_use_project_python_version(workflow_name):
+    workflow = load_workflow(f".github/workflows/{workflow_name}.yml")
+
+    for job in workflow.get("jobs", {}).values():
+        for step in job.get("steps", []):
+            if step.get("uses") == "actions/setup-python@v4":
+                assert step.get("with", {}).get("python-version") == "3.13"
+
+
+def test_release_workflow_concurrency_lock():
+    workflow = load_workflow(".github/workflows/release.yml")
+
+    concurrency = workflow.get("concurrency", {})
+    assert concurrency.get("group") == "release-${{ github.ref }}"
+    assert concurrency.get("cancel-in-progress") is False
+
+
+def test_release_uses_expected_script_arguments():
+    workflow = load_workflow(".github/workflows/release.yml")
+
+    for job_name, script_requirements in RELEASE_SCRIPT_EXPECTATIONS.items():
+        commands = get_run_commands(workflow["jobs"][job_name])
+
+        for script_name, required_fragments in script_requirements:
+            assert any(
+                f"python .github/scripts/{script_name}" in command
+                and all(fragment in command for fragment in required_fragments)
+                for command in commands
+            ), (
+                f"{job_name} is missing expected {script_name} invocation "
+                f"with fragments: {required_fragments}"
+            )
+
+
+def test_release_skips_tagging_when_bump_is_none():
+    workflow = load_workflow(".github/workflows/release.yml")
+
+    bump_job = workflow["jobs"]["bump_version"]
+    assert (
+        bump_job.get("outputs", {}).get("bump_type")
+        == "${{ steps.determine.outputs.bump_type }}"
+    )
+
+    create_tag_job = workflow["jobs"]["create_tag"]
+    condition = create_tag_job.get("if", "")
+    assert "needs.bump_version.outputs.bump_type" in condition
+    assert "!= 'none'" in condition
+
+
+def test_release_commits_bump_before_tagging():
+    workflow = load_workflow(".github/workflows/release.yml")
+    commands = get_run_commands(workflow["jobs"]["create_tag"])
+
+    commit_commands = [command for command in commands if "git commit -m" in command]
+    assert commit_commands
+    assert all("[skip ci]" not in command for command in commit_commands)
+    assert any("git push origin HEAD:main" in command for command in commands)
+
+
+def test_release_tag_push_is_idempotent():
+    workflow = load_workflow(".github/workflows/release.yml")
+    commands = get_run_commands(workflow["jobs"]["create_tag"])
+
+    assert any(
+        "git ls-remote --exit-code --tags origin" in command for command in commands
+    )
+    assert any(
+        "git tag" in command and "git push origin" in command for command in commands
+    )
+
+
+def test_release_builds_distribution_from_tagged_commit():
+    workflow = load_workflow(".github/workflows/release.yml")
+
+    build_job = workflow["jobs"]["build_package"]
+    assert set(build_job.get("needs", [])) == {"create_tag", "bump_version"}
+
+    checkout_step = build_job.get("steps", [])[0]
+    assert checkout_step.get("uses") == "actions/checkout@v4"
+    assert (
+        checkout_step.get("with", {}).get("ref")
+        == "v${{ needs.bump_version.outputs.new_version }}"
+    )
+
+    steps = build_job.get("steps", [])
+    assert any("uv build" in step.get("run", "") for step in steps)
+
+
+def test_pages_workflow_deploys_docs():
+    workflow_path = ".github/workflows/pages.yml"
+    workflow = load_workflow(workflow_path)
+
+    assert workflow["name"] == "pages"
+    assert workflow.get("permissions", {}).get("contents") == "write"
+    assert "deploy_docs" in workflow["jobs"]
+    deploy_job = workflow["jobs"]["deploy_docs"]
+    steps = deploy_job.get("steps", [])
+
+    assert any(
+        "uv sync --group dev --extra dev" in step.get("run", "") for step in steps
+    )
+    assert any(
+        step.get("uses", "").startswith("peaceiris/actions-gh-pages") for step in steps
+    )

@@ -1,13 +1,15 @@
-name: docs
+name: pages
 
 on:
   push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+    branches: [main]
+
+permissions:
+  contents: write
 
 jobs:
-  build_docs:
+  deploy_docs:
+    name: Deploy docs
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -22,7 +24,12 @@ jobs:
         run: |
           uv sync --group dev --extra dev
 
-      - name: Build documentation
+      - name: Build Sphinx site
         run: |
           cd docs
-          uv run sphinx-build -b html . _build/html
+          uv run python -m sphinx -W -b html . _build/html
+
+      - uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs/_build/html

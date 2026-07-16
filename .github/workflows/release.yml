@@ -1,0 +1,205 @@
+name: release
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  analyze_commits:
+    name: Analyze commits
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.13'
+
+      - name: Install dependencies
+        run: |
+          uv pip install -e .
+
+      - name: Analyze commits
+        run: |
+          python .github/scripts/analyze_commits.py --range ${{ github.event.before }}..${{ github.sha }} --output analysis.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: analysis
+          path: analysis.json
+
+  bump_version:
+    name: Bump version
+    runs-on: ubuntu-latest
+    needs: analyze_commits
+    outputs:
+      bump_type: ${{ steps.determine.outputs.bump_type }}
+      current_version: ${{ steps.version.outputs.current_version }}
+      new_version: ${{ steps.version.outputs.new_version }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: analysis
+          path: .
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.13'
+
+      - name: Install dependencies
+        run: |
+          uv pip install -e .
+
+      - name: Determine version bump
+        id: determine
+        run: |
+          python .github/scripts/determine_version_bump.py analysis.json > bump-type.txt
+          echo "bump_type=$(tr -d '[:space:]' < bump-type.txt)" >> "$GITHUB_OUTPUT"
+
+      - name: Calculate next version
+        id: version
+        run: |
+          CURRENT_VERSION=$(python - <<'PY'
+          import tomllib
+          from pathlib import Path
+          data = tomllib.loads(Path('pyproject.toml').read_text(encoding='utf-8'))
+          print(data['project']['version'])
+          PY
+          )
+          BUMP_TYPE=$(tr -d '[:space:]' < bump-type.txt)
+          python .github/scripts/bump_version.py --current "$CURRENT_VERSION" --bump "$BUMP_TYPE" > version.txt
+
+          echo "current_version=$CURRENT_VERSION" >> "$GITHUB_OUTPUT"
+          echo "new_version=$(tr -d '[:space:]' < version.txt)" >> "$GITHUB_OUTPUT"
+
+  create_tag:
+    name: Create tag
+    runs-on: ubuntu-latest
+    if: needs.bump_version.outputs.bump_type != 'none'
+    needs:
+      - analyze_commits
+      - bump_version
+    env:
+      CURRENT_VERSION: ${{ needs.bump_version.outputs.current_version }}
+      NEW_VERSION: ${{ needs.bump_version.outputs.new_version }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: analysis
+          path: .
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.13'
+
+      - name: Install dependencies
+        run: |
+          uv pip install -e .
+
+      - name: Generate release notes
+        run: |
+          python .github/scripts/generate_release_notes.py --analysis-file analysis.json --current-version "$CURRENT_VERSION" --new-version "$NEW_VERSION" --output release-notes.md
+
+      - name: Update changelog
+        run: |
+          python .github/scripts/update_changelog.py --version "$NEW_VERSION" --release-notes-file release-notes.md
+
+      - name: Update project version references
+        run: |
+          python .github/scripts/update_version.py --version "$NEW_VERSION"
+          python .github/scripts/update_version_references.py --old-version "$CURRENT_VERSION" --new-version "$NEW_VERSION"
+
+      - name: Commit version updates
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add pyproject.toml CHANGELOG.md README.md docs/
+          if ! git diff --cached --quiet; then
+            git commit -m "chore(release): bump version to v$NEW_VERSION"
+          fi
+          git push origin HEAD:main
+
+      - name: Create and push git tag
+        run: |
+          if git ls-remote --exit-code --tags origin "refs/tags/v$NEW_VERSION" >/dev/null 2>&1; then
+            echo "Tag v$NEW_VERSION already exists on origin; skipping tag creation."
+          else
+            git tag "v$NEW_VERSION"
+            git push origin "v$NEW_VERSION"
+          fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-notes
+          path: release-notes.md
+
+  github_release:
+    name: GitHub Release
+    runs-on: ubuntu-latest
+    needs:
+      - create_tag
+      - bump_version
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-notes
+          path: .
+
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ needs.bump_version.outputs.new_version }}
+          body_path: release-notes.md
+          generate_release_notes: true
+
+  build_package:
+    name: Build package
+    runs-on: ubuntu-latest
+    needs:
+      - create_tag
+      - bump_version
+    steps:
+      - name: Checkout tagged release commit
+        uses: actions/checkout@v4
+        with:
+          ref: v${{ needs.bump_version.outputs.new_version }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.13'
+
+      - name: Install build tools
+        run: |
+          uv pip install -e .
+
+      - name: Build distribution
+        run: |
+          uv build --out-dir dist/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
