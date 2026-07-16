@@ -221,7 +221,7 @@ def test_workflows_use_project_python_version(workflow_name):
 
     for job in workflow.get("jobs", {}).values():
         for step in job.get("steps", []):
-            if step.get("uses") == "actions/setup-python@v4":
+            if step.get("uses") == "actions/setup-python@v5":
                 assert step.get("with", {}).get("python-version") == "3.13"
 
 
