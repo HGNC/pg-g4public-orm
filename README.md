@@ -8,6 +8,9 @@ gene/family data). Synchronous only, built on the shared
 > The ORM reads and writes **data only** — it never creates, alters, or drops
 > schema objects.
 
+Full API documentation is available at
+**[https://HGNC.github.io/pg-g4public-orm/](https://HGNC.github.io/pg-g4public-orm/)**.
+
 ## Quick start
 
 ```python
