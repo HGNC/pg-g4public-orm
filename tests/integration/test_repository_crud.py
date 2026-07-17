@@ -93,7 +93,7 @@ def test_repository_crud_round_trip_for_junction_model(
                 hgnc_id=999_999,
                 family_id=family.id,
                 url="https://example.org/t11",
-                custom_sort=1,
+                custom_sort="1",
             )
             junction_repo.add(link)
             session.flush()

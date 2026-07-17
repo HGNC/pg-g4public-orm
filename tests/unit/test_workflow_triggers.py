@@ -161,16 +161,23 @@ def test_coverage_workflow():
     assert workflow["name"] == "coverage"
     assert "coverage" in workflow["jobs"]
     steps = workflow["jobs"]["coverage"].get("steps", [])
-    if len(steps) >= 2:
-        run_commands = steps[-2].get("run", "").strip().split("\n")
-        pytest_cov_command = run_commands[0] if run_commands else ""
-        assert (
-            pytest_cov_command == "uv run pytest --cov=src/pg_g4public_orm tests/"
-        ), "coverage workflow pytest command incorrect"
-        codecov_command = run_commands[1] if len(run_commands) > 1 else ""
-        assert (
-            codecov_command == "uv run codecov"
-        ), "coverage workflow codecov command incorrect"
+
+    # The pytest+coverage run step must collect coverage over the package.
+    assert any(
+        "pytest --cov=src/pg_g4public_orm" in step.get("run", "") for step in steps
+    ), "coverage workflow must run pytest --cov over the package"
+
+    # The 70% gate must be enforced as its own step (not silently skipped by a
+    # failing upload step placed before it).
+    assert any(
+        "coverage report --fail-under=70" in step.get("run", "") for step in steps
+    ), "coverage workflow must enforce the --fail-under=70 threshold"
+
+    # No `uv run codecov` step: codecov is not installed/configured, and a
+    # failing upload would abort the workflow before the threshold check runs.
+    assert not any(
+        "codecov" in step.get("run", "") for step in steps
+    ), "coverage workflow must not invoke codecov (not installed; would skip the gate)"
 
     assert_workflow_triggers("coverage", workflow)
 
@@ -203,6 +210,7 @@ def test_docs_workflow():
             "release",
             {
                 "analyze_commits",
+                "test",
                 "bump_version",
                 "create_tag",
                 "github_release",

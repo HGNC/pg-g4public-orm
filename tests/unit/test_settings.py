@@ -153,3 +153,26 @@ def test_database_settings_exposed_at_package_root() -> None:
 
     assert hasattr(pg_g4public_orm, "DatabaseSettings")
     assert pg_g4public_orm.DatabaseSettings is not None
+
+
+def test_url_property_hides_password() -> None:
+    """``settings.url`` must never expose the plaintext DB password.
+
+    Guards against a credential leak if a consumer logs or prints the URL.
+    The full credential-bearing URL remains available via ``get_url()`` for
+    engine construction.
+    """
+    from pg_g4public_orm.core.settings import DatabaseSettings
+
+    settings = DatabaseSettings(
+        username="leakcheck", password="SUPERSECRET", host="db", database="g4public"
+    )
+
+    rendered = settings.url
+
+    assert (
+        "SUPERSECRET" not in rendered
+    ), f"settings.url leaked the password: {rendered!r}"
+    assert settings.password == "SUPERSECRET"  # the real value is still present
+    # And the credential-bearing URL is still reachable via get_url().
+    assert "SUPERSECRET" in settings.get_url().render_as_string(hide_password=False)

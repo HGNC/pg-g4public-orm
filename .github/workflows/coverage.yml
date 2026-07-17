@@ -25,7 +25,6 @@ jobs:
       - name: Run coverage tests
         run: |
           uv run pytest --cov=src/pg_g4public_orm tests/
-          uv run codecov
 
       - name: Check coverage threshold
         run: |

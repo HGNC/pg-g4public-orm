@@ -32,12 +32,32 @@ jobs:
 
       - name: Analyze commits
         run: |
-          python .github/scripts/analyze_commits.py --range ${{ github.event.before }}..${{ github.sha }} --output analysis.json
+          python .github/scripts/analyze_commits.py --range "${{ github.event.before }}..${{ github.sha }}" --output analysis.json
 
       - uses: actions/upload-artifact@v4
         with:
           name: analysis
           path: analysis.json
+
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install dependencies
+        run: |
+          uv pip install -e '.[test,postgres]'
+
+      - name: Run unit tests
+        run: |
+          uv run pytest tests/unit
 
   bump_version:
     name: Bump version
@@ -94,6 +114,7 @@ jobs:
     needs:
       - analyze_commits
       - bump_version
+      - test
     env:
       CURRENT_VERSION: ${{ needs.bump_version.outputs.current_version }}
       NEW_VERSION: ${{ needs.bump_version.outputs.new_version }}

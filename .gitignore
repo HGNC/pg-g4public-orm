@@ -4,3 +4,5 @@ __pycache__/
 
 # Sphinx build output
 docs/_build/
+/.pi-subagents/artifacts
+/.coverage

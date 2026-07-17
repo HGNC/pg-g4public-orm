@@ -340,12 +340,16 @@ def main():
             _merge_intelligent_analysis(analysis, intelligent_analysis)
             print("🤖 Intelligent analysis completed", file=sys.stderr)
         except ImportError as e:
+            # The intelligent analyzer is an OPTIONAL enhancement, not vendored
+            # here. When it is absent, fall back to conventional analysis only
+            # (which will resolve to "none" if no conventional commits exist)
+            # instead of hard-failing the whole release pipeline.
             print(
-                "Error: intelligent analysis required when no conventional commits are found "
-                f"(missing dependency: {e})",
+                "Warning: intelligent commit analyzer unavailable "
+                f"(missing optional dependency: {e}); "
+                "falling back to conventional analysis only.",
                 file=sys.stderr,
             )
-            return 1
         except Exception as e:
             print(
                 "Error: intelligent analysis required when no conventional commits are found "

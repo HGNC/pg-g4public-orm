@@ -89,5 +89,10 @@ class DatabaseSettings(db_common.DatabaseSettings):
 
     @property
     def url(self) -> str:
-        """Build the PostgreSQL connection URL as a legacy string."""
-        return self.get_url().render_as_string(hide_password=False)
+        """Connection URL as a string with the password **hidden**.
+
+        The password is redacted so logging or printing ``settings.url`` can
+        never leak the DB credential. The full URL (with credentials) is
+        available via :meth:`get_url` for actual engine construction.
+        """
+        return self.get_url().render_as_string(hide_password=True)

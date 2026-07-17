@@ -1,10 +1,10 @@
 /*
  Navicat PostgreSQL Dump SQL
 
- Source Server         : GCP - HGNC
+ Source Server         : (scrubbed)
  Source Server Type    : PostgreSQL
  Source Server Version : 180001 (180001)
- Source Host           : 34.147.243.58:5432
+ Source Host           : (scrubbed)
  Source Catalog        : g4public
  Source Schema         : public
 

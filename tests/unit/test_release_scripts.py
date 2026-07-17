@@ -155,7 +155,7 @@ def test_determine_version_bump() -> None:
         os.unlink(analysis_path)
 
 
-def test_analyze_commits_fails_fast_without_conventional_commits() -> None:
+def test_analyze_commits_degrades_gracefully_without_conventional_commits() -> None:
     with tempfile.TemporaryDirectory() as tmp_dir:
         repo = Path(tmp_dir)
         subprocess.run(["git", "init"], cwd=repo, check=True, capture_output=True)
@@ -201,8 +201,32 @@ def test_analyze_commits_fails_fast_without_conventional_commits() -> None:
             check=False,
         )
 
-        assert result.returncode == 1
-        assert "intelligent analysis" in result.stderr.lower()
+        # The intelligent analyzer is an OPTIONAL enhancement that is not
+        # vendored here. With no conventional commits and no intelligent
+        # analyzer, analyze_commits must degrade gracefully (exit 0, warn)
+        # rather than hard-fail the release pipeline.
+        assert (
+            result.returncode == 0
+        ), f"expected graceful exit 0, got {result.returncode}: {result.stderr}"
+        assert (
+            "intelligent" in result.stderr.lower()
+        ), f"expected a graceful-degradation warning: {result.stderr!r}"
+
+        # And the analysis must resolve to "none" (no release), not error.
+        bump_result = subprocess.run(
+            [
+                sys.executable,
+                str(SCRIPTS_DIR / "determine_version_bump.py"),
+                str(output_path),
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        assert bump_result.returncode == 0, bump_result.stderr
+        assert (
+            bump_result.stdout.strip() == "none"
+        ), f"expected 'none' bump, got {bump_result.stdout!r}"
 
 
 def test_check_coverage_threshold_rejects_sub_70_percent() -> None:
