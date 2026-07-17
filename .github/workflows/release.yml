@@ -32,7 +32,16 @@ jobs:
 
       - name: Analyze commits
         run: |
-          python .github/scripts/analyze_commits.py --range "${{ github.event.before }}..${{ github.sha }}" --output analysis.json
+          # On a branch's FIRST push github.event.before is the all-zero SHA,
+          # which `git log <zero>..<sha>` rejects. Treat that as "analyze the
+          # whole history up to this commit" so the initial release is cut.
+          BEFORE="${{ github.event.before }}"
+          if [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
+            RANGE="HEAD"
+          else
+            RANGE="${BEFORE}..${{ github.sha }}"
+          fi
+          python .github/scripts/analyze_commits.py --range "$RANGE" --output analysis.json
 
       - uses: actions/upload-artifact@v4
         with:

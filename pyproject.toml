@@ -1,6 +1,6 @@
 [project]
 name = "pg-g4public-orm"
-version = "0.1.0"
+version = "0.0.0"
 description = "SQLAlchemy 2.0 ORM for the PostgreSQL g4public database (HGNC public gene/family data)"
 readme = "README.md"
 requires-python = ">=3.13"
