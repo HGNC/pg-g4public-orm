@@ -1,5 +1,28 @@
 #
 
+# Release v0.0.2
+
+**Released:** 2026-07-17
+**From:** v0.0.1
+
+---
+
+## Bug Fixes
+
+### workflows
+
+- add missing uv setup and venv in coverage.yml and docs.yml (87a44de7)
+
+---
+
+## 📊 Release Statistics
+
+- **Total commits:** 3
+- **Conventional commits:** 1
+- **Bug fixes:** 1
+
+**Version change:** v0.0.1 → v0.0.2
+
 # Release v0.0.1
 
 **Released:** 2026-07-17
