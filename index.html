@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="./">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>pg-g4public-orm &#8212; pg-g4public-orm 0.1.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="_static/basic.css?v=b08954a9" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css?v=27fed22d" />
+    <script src="_static/documentation_options.js?v=01f34227"></script>
+    <script src="_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Installation" href="installation.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="pg-g4public-orm">
+<h1>pg-g4public-orm<a class="headerlink" href="#pg-g4public-orm" title="Link to this heading">¶</a></h1>
+<p>SQLAlchemy 2.0 ORM for the PostgreSQL <code class="docutils literal notranslate"><span class="pre">g4public</span></code> database (HGNC public
+gene/family data). Synchronous only, built on the shared
+<a class="reference external" href="https://github.com/HGNC/db-common"><code class="docutils literal notranslate"><span class="pre">db-common</span></code></a> library using the
+<code class="docutils literal notranslate"><span class="pre">postgresql+psycopg</span></code> (psycopg3) driver.</p>
+<blockquote>
+<div><p>The ORM reads and writes <strong>data only</strong> — it never creates, alters, or drops
+schema objects.</p>
+</div></blockquote>
+<div class="toctree-wrapper compound">
+<p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#from-source-development">From source (development)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#runtime-dependencies">Runtime dependencies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#configuration">Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#running-the-test-suite">Running the test suite</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#building-the-docs">Building the docs</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="quick-start.html">Quick start</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="quick-start.html#initialize-the-engine">Initialize the engine</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quick-start.html#read-write-with-a-repository">Read / write with a repository</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quick-start.html#read-only-sessions">Read-only sessions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quick-start.html#top-level-imports">Top-level imports</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="api/index.html">API Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="api/models.html">API Reference</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">pg-g4public-orm</span></code> provides a typed, synchronous SQLAlchemy 2.0 ORM that maps
+the <strong>existing</strong> PostgreSQL <code class="docutils literal notranslate"><span class="pre">g4public</span></code> schema and gives full row-level CRUD
+(create / read / update / delete data). It is the PostgreSQL sibling of
+<code class="docutils literal notranslate"><span class="pre">my-g4public-orm</span></code> (which targets MySQL), and mirrors the established
+<code class="docutils literal notranslate"><span class="pre">vgnc_orm</span></code>-on-<code class="docutils literal notranslate"><span class="pre">db-common</span></code> integration shape.</p>
+</section>
+<section id="features">
+<h2>Features<a class="headerlink" href="#features" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p><strong>20 curated ORM models</strong> mapping the <code class="docutils literal notranslate"><span class="pre">g4public</span></code> PostgreSQL schema (genes,
+families, hierarchy, HCOP orthologs, GenCC, MANE, etc.).</p></li>
+<li><p><strong>Generic <code class="docutils literal notranslate"><span class="pre">Repository[T]</span></code></strong> providing create / read / update / delete over a
+SQLAlchemy <code class="docutils literal notranslate"><span class="pre">Session</span></code>.</p></li>
+<li><p><strong>Session module-function surface</strong> (<code class="docutils literal notranslate"><span class="pre">initialize_engine</span></code>,
+<code class="docutils literal notranslate"><span class="pre">get_readwrite_session</span></code>, <code class="docutils literal notranslate"><span class="pre">get_readonly_session</span></code>, <code class="docutils literal notranslate"><span class="pre">close_all_sessions</span></code>, …)
+delegating to <code class="docutils literal notranslate"><span class="pre">db-common</span></code>.</p></li>
+<li><p><strong>PostgreSQL-native type mapping</strong> — <code class="docutils literal notranslate"><span class="pre">bool</span></code>, <code class="docutils literal notranslate"><span class="pre">int4</span></code> / <code class="docutils literal notranslate"><span class="pre">int8</span></code> (<code class="docutils literal notranslate"><span class="pre">BigInteger</span></code>),
+<code class="docutils literal notranslate"><span class="pre">varchar(N)</span></code>, <code class="docutils literal notranslate"><span class="pre">text</span></code>, <code class="docutils literal notranslate"><span class="pre">date</span></code>, <code class="docutils literal notranslate"><span class="pre">timestamp</span></code> — driven by the authoritative
+Navicat schema dump.</p></li>
+</ul>
+</section>
+<section id="safety">
+<h2>Safety<a class="headerlink" href="#safety" title="Link to this heading">¶</a></h2>
+<p>The ORM never calls <code class="docutils literal notranslate"><span class="pre">metadata.create_all()</span></code>, Alembic, or any DDL against the
+real database, and it does not declare <code class="docutils literal notranslate"><span class="pre">ForeignKey(...)</span></code> or <code class="docutils literal notranslate"><span class="pre">relationship()</span></code>
+in v1 (columns are read directly, consistent with <code class="docutils literal notranslate"><span class="pre">my-g4public-orm</span></code>). A
+marked-<code class="docutils literal notranslate"><span class="pre">integration</span></code> schema-drift guard reflects an ephemeral PostgreSQL
+container and asserts the declared model metadata matches the live schema
+(columns / types / nullability / primary keys / indexes / foreign keys).</p>
+<p>Head to <a class="reference internal" href="installation.html"><span class="doc">Installation</span></a> to get started, then <a class="reference internal" href="quick-start.html"><span class="doc">Quick start</span></a>, or browse
+the <a class="reference internal" href="api/index.html"><span class="doc">API Reference</span></a> for the full autodoc’d API reference.</p>
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="#">pg-g4public-orm</a></h1>
+
+
+
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quick-start.html">Quick start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api/index.html">API Reference</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="#">Documentation overview</a><ul>
+      <li>Next: <a href="installation.html" title="next chapter">Installation</a></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2026, HGNC Development Team.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 9.1.0</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+      |
+      <a href="_sources/index.md.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
